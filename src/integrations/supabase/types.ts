@@ -14,16 +14,177 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      devices: {
+        Row: {
+          browser: string | null
+          created_at: string
+          device_name: string
+          id: string
+          ip_address: string
+          is_blocked: boolean
+          last_login: string
+          os: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string
+          device_name: string
+          id?: string
+          ip_address?: string
+          is_blocked?: boolean
+          last_login?: string
+          os?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string
+          device_name?: string
+          id?: string
+          ip_address?: string
+          is_blocked?: boolean
+          last_login?: string
+          os?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      event_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          current_usage: number
+          event_name: string
+          expires_at: string
+          id: string
+          usage_limit: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          current_usage?: number
+          event_name?: string
+          expires_at: string
+          id?: string
+          usage_limit?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          current_usage?: number
+          event_name?: string
+          expires_at?: string
+          id?: string
+          usage_limit?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          is_blocked: boolean
+          registration_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          is_blocked?: boolean
+          registration_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_blocked?: boolean
+          registration_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          device_id: string | null
+          id: string
+          login_time: string
+          logout_time: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          device_id?: string | null
+          id?: string
+          login_time?: string
+          logout_time?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          device_id?: string | null
+          id?: string
+          login_time?: string
+          logout_time?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +311,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
