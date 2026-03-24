@@ -1,28 +1,25 @@
 
 
-## Plan: Restrict Registration to `.ac.ke` Emails
+## Plan: Pre-seed Database with Realistic Demo Data
 
 ### What
-Only allow users with emails ending in `.ac.ke` (Kenyan academic institutions) to register.
+Insert 50+ realistic demo records across all tables (profiles, devices, sessions, event_codes) so the admin dashboard shows impressive charts and populated tables during the hackathon demo.
 
-### Implementation
+### Approach
+Use the database insert tool to run SQL that populates:
 
-**1. Client-side validation** — Update `Login.tsx` to validate the email domain before calling signup, showing an error like "Only academic emails (.ac.ke) are allowed."
+1. **~50 profiles** — Realistic Kenyan university student names with `.ac.ke` emails and registration numbers
+2. **~60 devices** — Various browsers (Chrome, Firefox, Safari, Edge) and OS combinations (Windows, macOS, Android, iOS, Linux) with simulated IPs
+3. **~120 sessions** — Spread over the past 14 days with varied login/logout times, mix of active/expired statuses
+4. **~8 event codes** — Mix of active and expired codes with realistic names (Hackathon 2026, Open Day, Workshop, etc.) and varied usage counts
 
-**2. Server-side enforcement** — Create a database function + trigger on `auth.users` that rejects inserts where the email doesn't end with `.ac.ke`. This prevents bypassing the UI.
-
-Actually, since we cannot attach triggers to `auth.users` (reserved schema), the server-side approach will be:
-- Create a **database function** that validates email domain
-- Add a **trigger on `profiles`** table (which is populated via `handle_new_user`) to reject non-`.ac.ke` emails — however this would create an orphaned auth user.
-
-The cleanest approach: **use a Supabase Edge Function** as a pre-signup hook, or simply enforce it **client-side + via an RLS policy on profiles**.
-
-**Revised approach — keep it simple and effective:**
-
-1. **Client-side** (`Login.tsx`): Check `email.endsWith('.ac.ke')` before signup. Show toast error if not.
-2. **Database migration**: Add a validation trigger on the `profiles` table that raises an exception if the email doesn't end with `.ac.ke`, preventing profile creation (and effectively blocking the signup flow).
+### Key Details
+- Profiles will use `gen_random_uuid()` for IDs since these are demo users without actual auth accounts
+- Device and session records will reference the demo profile IDs
+- Login times will be distributed across the past 2 weeks so the admin charts (Login Trends, Device Connections) show meaningful patterns
+- A few users will be marked `is_blocked = true` and a few devices `is_blocked = true` for demo purposes
+- Event codes will include both future (active) and past (expired) entries
 
 ### Files Changed
-- `src/pages/Login.tsx` — Add email domain validation before signup call
-- New migration — Add email domain validation trigger on `profiles` table
+- No code changes — data-only operation via database insert tool
 
