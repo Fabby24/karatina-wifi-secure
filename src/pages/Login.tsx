@@ -31,6 +31,11 @@ export default function Login() {
 
     try {
       if (isSignUp) {
+        if (!email.trim().endsWith('.ac.ke')) {
+          toast.error('Only academic emails ending in .ac.ke are allowed to register.');
+          setLoading(false);
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
