@@ -4,6 +4,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import StatCard from '@/components/StatCard';
 import { Users, Wifi, Monitor, Key, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { toast } from 'sonner';
 
 export default function AdminOverview() {
   const [stats, setStats] = useState({ users: 0, activeSessions: 0, devices: 0, eventCodes: 0 });
@@ -45,6 +46,14 @@ export default function AdminOverview() {
     // Realtime subscription for sessions
     const channel = supabase
       .channel('admin-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sessions' }, (payload) => {
+        toast.info('New login session detected', { description: 'A user just connected to the network.' });
+        fetchAll();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'devices' }, (payload) => {
+        toast.info('New device connected', { description: `Device registered on the network.` });
+        fetchAll();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => fetchAll())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => fetchAll())
       .subscribe();

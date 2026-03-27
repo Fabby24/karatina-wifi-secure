@@ -7,8 +7,9 @@ import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Wifi, Lock, Mail, Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
+import { Wifi, Lock, Mail, Eye, EyeOff, Loader2, UserPlus, Shield, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
+import { callGateway } from '@/lib/gateway';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -18,6 +19,7 @@ export default function Login() {
   const [fullName, setFullName] = useState('');
   const [regNumber, setRegNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState('');
   const navigate = useNavigate();
   const { fetchUserRole } = useAuthStore();
 
@@ -53,7 +55,8 @@ export default function Login() {
 
         const userId = data.user.id;
 
-        // Check if blocked
+        // Step 1: Verify credentials
+        setLoadingStep('Verifying credentials...');
         const { data: profile } = await supabase
           .from('profiles')
           .select('is_blocked')
@@ -64,28 +67,22 @@ export default function Login() {
           await supabase.auth.signOut();
           toast.error('Your account has been blocked. Contact administrator.');
           setLoading(false);
+          setLoadingStep('');
           return;
         }
 
-        // Register device & create session
+        // Step 2: Register device
+        setLoadingStep('Registering device...');
         const deviceId = await registerDevice(supabase, userId);
         await createSession(supabase, userId, deviceId);
 
-        // Fetch role and redirect
+        // Step 3: Grant network access
+        setLoadingStep('Granting network access...');
+        await callGateway(userId);
         await fetchUserRole(userId);
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId)
-          .maybeSingle();
 
         toast.success('Access Granted! Connected to SecureLab WiFi.');
-
-        if (roleData?.role === 'admin') {
-          navigate('/admin', { replace: true });
-        } else {
-          navigate('/dashboard', { replace: true });
-        }
+        navigate('/access-granted', { replace: true });
       }
     } catch (err: any) {
       toast.error(err.message || 'Authentication failed');
@@ -205,6 +202,13 @@ export default function Login() {
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               {isSignUp ? 'Create Account' : 'Connect to WiFi'}
             </Button>
+
+            {loading && loadingStep && (
+              <div className="flex items-center gap-2 justify-center text-sm text-muted-foreground animate-fade-in">
+                <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                {loadingStep}
+              </div>
+            )}
           </form>
 
           <div className="mt-6 text-center space-y-3">

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAutoLogout } from '@/hooks/useAutoLogout';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -34,6 +35,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const links = role === 'admin' ? adminLinks : userLinks;
+  useAutoLogout();
 
   return (
     <div className="flex min-h-screen bg-background">
