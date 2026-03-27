@@ -18,8 +18,10 @@ import AdminDevices from './pages/admin/AdminDevices';
 import AdminEvents from './pages/admin/AdminEvents';
 import AdminSessions from './pages/admin/AdminSessions';
 import AdminReports from './pages/admin/AdminReports';
+import AccessGranted from './pages/AccessGranted';
 import AuthGuard from './components/AuthGuard';
 import NotFound from './pages/NotFound';
+import Index from './pages/Index';
 
 const queryClient = new QueryClient();
 
@@ -60,7 +62,9 @@ const App = () => (
       <BrowserRouter>
         <AuthListener />
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/access-granted" element={<AccessGranted />} />
           <Route path="/event-access" element={<EventAccess />} />
           
           {/* User routes */}
