@@ -7,7 +7,7 @@ import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Wifi, Lock, Mail, Eye, EyeOff, Loader2, UserPlus, Shield, Monitor } from 'lucide-react';
+import { Wifi, Lock, Mail, Eye, EyeOff, Loader2, UserPlus, Shield, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { callGateway } from '@/lib/gateway';
 
@@ -15,9 +15,6 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [regNumber, setRegNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState('');
   const navigate = useNavigate();
@@ -32,62 +29,41 @@ export default function Login() {
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        if (!email.trim().endsWith('.ac.ke')) {
-          toast.error('Only academic emails ending in .ac.ke are allowed to register.');
-          setLoading(false);
-          return;
-        }
-        const { error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            data: { full_name: fullName.trim(), registration_number: regNumber.trim() },
-            emailRedirectTo: window.location.origin,
-          },
-        });
-        if (error) throw error;
-        toast.success('Account created! Check your email to verify, or login if auto-confirm is enabled.');
-        setIsSignUp(false);
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-        if (error) throw error;
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) throw error;
 
-        const userId = data.user.id;
+      const userId = data.user.id;
 
-        // Step 1: Verify credentials
-        setLoadingStep('Verifying credentials...');
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_blocked')
-          .eq('id', userId)
-          .maybeSingle();
+      setLoadingStep('Verifying credentials...');
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_blocked')
+        .eq('id', userId)
+        .maybeSingle();
 
-        if (profile?.is_blocked) {
-          await supabase.auth.signOut();
-          toast.error('Your account has been blocked. Contact administrator.');
-          setLoading(false);
-          setLoadingStep('');
-          return;
-        }
-
-        // Step 2: Register device
-        setLoadingStep('Registering device...');
-        const deviceId = await registerDevice(supabase, userId);
-        await createSession(supabase, userId, deviceId);
-
-        // Step 3: Grant network access
-        setLoadingStep('Granting network access...');
-        await callGateway(userId);
-        await fetchUserRole(userId);
-
-        toast.success('Access Granted! Connected to SecureLab WiFi.');
-        navigate('/access-granted', { replace: true });
+      if (profile?.is_blocked) {
+        await supabase.auth.signOut();
+        toast.error('Your account has been blocked. Contact administrator.');
+        setLoading(false);
+        setLoadingStep('');
+        return;
       }
+
+      setLoadingStep('Registering device...');
+      const deviceId = await registerDevice(supabase, userId);
+      await createSession(supabase, userId, deviceId);
+
+      setLoadingStep('Granting network access...');
+      await callGateway(userId);
+      await fetchUserRole(userId);
+
+      toast.success('Access Granted! Connected to SecureLab WiFi.');
+      navigate('/access-granted', { replace: true });
     } catch (err: any) {
       toast.error(err.message || 'Authentication failed');
     } finally {
       setLoading(false);
+      setLoadingStep('');
     }
   };
 
@@ -129,26 +105,11 @@ export default function Login() {
         <div className="w-full max-w-md animate-slide-up">
           <div className="text-center mb-8">
             <img src={logo} alt="SecureLab" className="h-16 w-16 mx-auto mb-4 rounded-xl" />
-            <h2 className="text-2xl font-bold text-foreground">
-              {isSignUp ? 'Create Account' : 'WiFi Portal Login'}
-            </h2>
-            <p className="text-muted-foreground mt-1">
-              {isSignUp ? 'Register for WiFi access' : 'Authenticate to access the network'}
-            </p>
+            <h2 className="text-2xl font-bold text-foreground">WiFi Portal Login</h2>
+            <p className="text-muted-foreground mt-1">Authenticate to access the network</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="John Doe"
-                />
-              </div>
-            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
@@ -186,21 +147,10 @@ export default function Login() {
                 </button>
               </div>
             </div>
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="regNumber">Registration Number (optional)</Label>
-                <Input
-                  id="regNumber"
-                  value={regNumber}
-                  onChange={(e) => setRegNumber(e.target.value)}
-                  placeholder="e.g. CS/001/2024"
-                />
-              </div>
-            )}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {isSignUp ? 'Create Account' : 'Connect to WiFi'}
+              Connect to WiFi
             </Button>
 
             {loading && loadingStep && (
@@ -211,13 +161,11 @@ export default function Login() {
             )}
           </form>
 
-          <div className="mt-6 text-center space-y-3">
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-accent hover:underline"
-            >
-              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Register"}
-            </button>
+          <div className="mt-6 space-y-3">
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground">
+              <Info className="h-4 w-4 mt-0.5 shrink-0 text-accent" />
+              <span>Your login credentials were sent to your university email. Contact IT support if you haven't received them.</span>
+            </div>
             <div className="text-center">
               <Link to="/event-access" className="text-sm text-muted-foreground hover:text-accent">
                 <UserPlus className="h-3 w-3 inline mr-1" />

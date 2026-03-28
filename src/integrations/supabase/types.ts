@@ -24,6 +24,8 @@ export type Database = {
           is_blocked: boolean
           last_login: string
           os: string | null
+          threat_reason: string | null
+          threat_score: number
           user_id: string
         }
         Insert: {
@@ -35,6 +37,8 @@ export type Database = {
           is_blocked?: boolean
           last_login?: string
           os?: string | null
+          threat_reason?: string | null
+          threat_score?: number
           user_id: string
         }
         Update: {
@@ -46,6 +50,8 @@ export type Database = {
           is_blocked?: boolean
           last_login?: string
           os?: string | null
+          threat_reason?: string | null
+          threat_score?: number
           user_id?: string
         }
         Relationships: []

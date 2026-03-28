@@ -64,7 +64,28 @@ export async function registerDevice(supabase: any, userId: string) {
     .select('id')
     .single();
   
-  return data?.id || null;
+  const deviceId = data?.id || null;
+
+  // Run AI threat analysis on new devices
+  if (deviceId) {
+    try {
+      const { data: analysisData, error } = await supabase.functions.invoke('analyze-device', {
+        body: { device_id: deviceId, user_id: userId, browser, os, ip_address: ip, device_name: deviceName },
+      });
+
+      if (!error && analysisData?.threat_score > 70) {
+        const { toast } = await import('sonner');
+        toast.error('⚠️ Security Alert: Your device has been flagged as suspicious and blocked. Contact IT support.');
+        await supabase.auth.signOut();
+        return null;
+      }
+    } catch (e) {
+      console.error('Threat analysis failed:', e);
+      // Don't block login if analysis fails
+    }
+  }
+
+  return deviceId;
 }
 
 export async function createSession(supabase: any, userId: string, deviceId: string | null) {
